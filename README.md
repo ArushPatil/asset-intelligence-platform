@@ -78,7 +78,15 @@ AssetIntelligence/
    cp .env.example .env
    ```
 
-3. **Run Application**:
+3. **Run the web app**:
+   ```bash
+   streamlit run app.py
+   ```
+   Opens at http://localhost:8501. Every source is optional: with Neo4j down the graph is
+   marked offline, and with no `GEMINI_API_KEY` or `OPENAI_API_KEY` answers come from a
+   local template built from the retrieved evidence.
+
+4. **Run the command-line demo** (optional):
    ```bash
    python main.py
    ```

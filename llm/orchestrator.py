@@ -233,5 +233,6 @@ class LLMOrchestrator:
             execution_plan=plan,
             graph_context=graph_ctx,
             telemetry_context=telemetry_ctx,
-            document_context=document_ctx
+            document_context=document_ctx,
+            llm_backend=self.llm_client.last_backend
         )

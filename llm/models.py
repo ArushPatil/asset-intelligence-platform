@@ -90,3 +90,4 @@ class OrchestratorResponse:
     graph_context: Optional[AssetContext] = None
     telemetry_context: Optional[TelemetryContext] = None
     document_context: Optional[DocumentContext] = None
+    llm_backend: str = "local"

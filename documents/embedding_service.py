@@ -5,7 +5,7 @@ Provides the EmbeddingService class responsible for generating dense vector embe
 for document chunks and search queries, hiding vectorization details behind a clean API.
 """
 
-from typing import List, Optional
+from typing import Any, List, Optional
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 

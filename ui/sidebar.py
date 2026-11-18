@@ -1,57 +1,46 @@
 """
 Sidebar Component Module.
 
-Renders System Services status badges and simplified Project Statistics in the left sidebar.
+Shows the real state of each data source, probed at render time rather than hard-coded.
 """
+
+from html import escape
 
 import streamlit as st
 
+from .data import document_status, llm_status, load_telemetry, neo4j_status
+
+STATE_TEXT = {"ok": "Online", "warn": "Fallback", "off": "Offline", "idle": "Idle", "crit": "Error"}
+
+
+def _row(name: str, status: dict) -> str:
+    state = status["state"]
+    return (
+        f"<div class='src-row'><div><div class='src-name'>{escape(name)}</div>"
+        f"<div class='src-detail'>{escape(status['detail'])}</div></div>"
+        f"<span class='pill {state}'>{STATE_TEXT[state]}</span></div>"
+    )
+
+
+def _telemetry_status() -> dict:
+    try:
+        df = load_telemetry()
+        span = df["timestamp"].max() - df["timestamp"].min()
+        hours = span.total_seconds() / 3600
+        return {"state": "ok", "detail": f"{len(df):,} readings over {hours:.0f} h"}
+    except Exception as e:
+        return {"state": "crit", "detail": str(e)[:80]}
+
 
 def render_sidebar() -> None:
-    """Render sidebar services status badges and project statistics."""
+    """Render data source status in the sidebar."""
     with st.sidebar:
-        st.markdown("<h3 style='font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #f8fafc;'>Services</h3>", unsafe_allow_html=True)
-
-        st.markdown(
-            """
-            <table class="sidebar-status-table">
-                <tr>
-                    <td>Knowledge Graph</td>
-                    <td style="text-align: right;" class="badge-connected">Connected</td>
-                </tr>
-                <tr>
-                    <td>Telemetry Engine</td>
-                    <td style="text-align: right;" class="badge-connected">Connected</td>
-                </tr>
-                <tr>
-                    <td>Document Index</td>
-                    <td style="text-align: right;" class="badge-connected">Connected</td>
-                </tr>
-                <tr>
-                    <td>AI Orchestrator</td>
-                    <td style="text-align: right;" class="badge-ready">Ready</td>
-                </tr>
-            </table>
-            """,
-            unsafe_allow_html=True
-        )
-
-        st.markdown("<hr style='border-color: #334155; margin: 20px 0 16px 0;'>", unsafe_allow_html=True)
-        st.markdown("<h3 style='font-size: 16px; font-weight: 700; margin-bottom: 12px; color: #f8fafc;'>Project Statistics</h3>", unsafe_allow_html=True)
-
-        stats = [
-            ("Knowledge Graph", "35 Nodes, 39 Relationships"),
-            ("Telemetry Engine", "288 Records (24h)"),
-            ("Documentation", "1 Manual (1,433 Chunks)")
+        st.markdown("<div class='label'>Data sources</div>", unsafe_allow_html=True)
+        rows = [
+            _row("Knowledge graph", neo4j_status()),
+            _row("Telemetry", _telemetry_status()),
+            _row("OEM manuals", document_status()),
+            _row("Language model", llm_status()),
         ]
-
-        for s_name, s_val in stats:
-            st.markdown(
-                f"""
-                <div style="margin-bottom: 12px;">
-                    <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;">{s_name}</div>
-                    <div style="font-size: 13px; font-weight: 600; color: #f8fafc;">{s_val}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        st.markdown("".join(rows), unsafe_allow_html=True)
+        st.caption("Offline sources are skipped; answers use whatever is available.")

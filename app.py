@@ -1,111 +1,90 @@
 """
-Asset Intelligence Platform — Enterprise Web Application.
+Asset Intelligence Platform: Streamlit web application.
 
-Main Streamlit application entry point integrating modular UI components with the backend
-LLMOrchestrator, Neo4j Knowledge Graph, Telemetry Engine, and Document RAG Vector Store.
-Renders an industrial engineering dashboard (Siemens Desigo CC / Honeywell Forge style).
+Run with:  streamlit run app.py
+
+The orchestrator is cached per server process (ui/data.py), a question runs only when the
+user asks one, and the last answer is kept in session state so reruns don't repeat the work.
 """
 
-import os
 from dotenv import load_dotenv
 import streamlit as st
 
-# Load environment variables dynamically at app startup
-load_dotenv(override=True)
+load_dotenv()
 
-# Set page configuration before any other Streamlit commands
 st.set_page_config(
-    page_title="Asset Intelligence Platform",
-    page_icon=None,
+    page_title="Asset Intelligence · AHU-01",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-from llm.orchestrator import LLMOrchestrator
-from llm.models import OrchestratorResponse
-from ui import (
+from ui import (  # noqa: E402  (set_page_config must come first)
     inject_custom_css,
-    render_sidebar,
+    render_ai_diagnosis,
+    render_evidence_section,
     render_header,
     render_kpi_cards,
     render_query_section,
-    render_ai_diagnosis,
-    render_evidence_section,
-    render_execution_details
+    render_sidebar,
+    render_telemetry_chart,
 )
+from ui.data import METRICS, get_orchestrator, load_telemetry, telemetry_anomalies  # noqa: E402
+
+FACILITY, ASSET = "Bommanahalli Office", "AHU-01"
+
+
+def run_query(question: str) -> None:
+    """Run one question through the pipeline and keep the result in session state."""
+    with st.status("Working on it…", expanded=False) as status:
+        status.write("Loading services (first run builds the manual index)…")
+        orchestrator = get_orchestrator()
+        status.write("Classifying the question, querying sources, writing the answer…")
+        try:
+            response = orchestrator.process_query(question)
+        except Exception as e:
+            status.update(label="Something went wrong", state="error")
+            st.error(f"The query failed: {e}")
+            return
+        for sc in response.service_calls:
+            status.write(f"{'✓' if sc.success else '✗'} {sc.service} · {sc.execution_time_ms:,.0f} ms")
+        status.update(label=f"Answered in {response.total_execution_time_ms / 1000:.1f} s", state="complete")
+    st.session_state["response"] = response
 
 
 def main() -> None:
-    """Main web application execution workflow."""
-    # Ensure env vars are fresh on every rerun
-    load_dotenv(override=True)
-
-    # Inject enterprise styling rules
     inject_custom_css()
 
-    # Render navigation sidebar
+    try:
+        df = load_telemetry()
+    except Exception as e:
+        st.error(f"Telemetry could not be loaded: {e}")
+        render_sidebar()
+        st.stop()
+
+    anomaly_count = sum(len(telemetry_anomalies(m)) for m in METRICS)
+    render_header(FACILITY, ASSET, anomaly_count)
+    render_kpi_cards(df)
+    st.write("")
+
+    question = render_query_section()
+    if question:
+        run_query(question)
+
+    response = st.session_state.get("response")
+    if response:
+        render_ai_diagnosis(response)
+        render_evidence_section(response)
+    else:
+        with st.container(border=True):
+            st.markdown("<div class='label'>Last 24 hours</div>", unsafe_allow_html=True)
+            metric = st.segmented_control(
+                "Metric", list(METRICS), default="supply_air_temperature", key="landing_metric",
+                format_func=lambda m: METRICS[m]["label"], label_visibility="collapsed",
+            ) or "supply_air_temperature"
+            render_telemetry_chart(metric, key="landing_chart")
+
+    # Last, so it reflects anything this run loaded (e.g. the manual index).
     render_sidebar()
 
-    # Render top enterprise header (Facility & System Status)
-    render_header(facility="Bommanahalli Office")
 
-    # Obtain fresh orchestrator instance
-    orchestrator = LLMOrchestrator()
-
-    # Render top KPI metrics row
-    render_kpi_cards(response=st.session_state.get("latest_response"))
-
-    # Render query input section and preset buttons
-    user_query, submitted = render_query_section()
-
-    if user_query.strip():
-        # Multi-stage visual progress loader
-        progress_placeholder = st.empty()
-
-        with progress_placeholder.container():
-            st.markdown(
-                """
-                <div style="background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 16px 20px; margin-bottom: 24px;">
-                    <div style="font-size: 14px; font-weight: 700; color: #1e3a8a; margin-bottom: 8px;">Processing System Query & Executing Multi-Source Pipeline...</div>
-                    <div style="font-size: 13px; color: #475569; line-height: 1.6;">
-                        • Intent Classification ... Complete<br>
-                        • Generating Execution Plan ... Complete<br>
-                        • Querying Enterprise Knowledge Graph ... Complete<br>
-                        • Analyzing Telemetry Sensors & Anomalies ... Complete<br>
-                        • Performing Vector RAG Document Search ... Complete<br>
-                        • Synthesizing Operational Assessment ... Complete
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        try:
-            # Process query end-to-end with fresh orchestrator
-            response: OrchestratorResponse = orchestrator.process_query(user_query)
-            st.session_state["latest_response"] = response
-
-            # Clear progress placeholder to render final output cleanly
-            progress_placeholder.empty()
-
-            # 1. Primary Operational Assessment Card
-            render_ai_diagnosis(response)
-
-            # 2. Supporting Evidence Dashboard (Plotly Charts, Asset Topology, Alarms, Documents)
-            render_evidence_section(response)
-
-            # 3. Collapsible Technical Execution Panel
-            render_execution_details(response)
-
-        except Exception as e:
-            progress_placeholder.empty()
-            st.error(f"An error occurred while executing the query: {e}")
-        finally:
-            try:
-                orchestrator.graph_client.close()
-            except Exception:
-                pass
-
-
-if __name__ == "__main__":
-    main()
+main()

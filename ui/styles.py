@@ -1,265 +1,99 @@
 """
-Enterprise UI Styles Module.
+UI Styles Module.
 
-Provides compact, high-density CSS styles for an industrial operations dashboard.
-Eliminates excess whitespace, fixes bullet alignment, and enhances readability.
+Dark theme. One small stylesheet on top of the Streamlit theme in .streamlit/config.toml.
+Colours live as CSS tokens on :root so every component draws from the same set.
 """
 
 import streamlit as st
 
+CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+    --ink: #e8eaed;
+    --muted: #9aa1ab;
+    --line: #262a31;
+    --surface: #171a1f;
+    --ground: #0f1115;
+    --accent: #2dd4bf;
+    --accent-soft: rgba(45, 212, 191, .12);
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --warn-soft: rgba(251, 191, 36, .12);
+    --crit: #f87171;
+    --crit-soft: rgba(248, 113, 113, .12);
+    --radius: 10px;
+}
+
+/* Not [class*="st-"]: that also hits Streamlit's icon spans and shows icon names as text. */
+html, body, .stApp, button, input, textarea {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+.block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1280px; }
+footer { visibility: hidden; }
+.stApp { background: var(--ground); }
+[data-testid="stVerticalBlockBorderWrapper"] { background: var(--surface); }
+
+/* Header */
+.ai-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.ai-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.ai-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); margin: 2px 0 0; line-height: 1.2; }
+.ai-sub { font-size: 14px; color: var(--muted); margin-top: 4px; }
+
+/* Pills */
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink); white-space: nowrap; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pill.ok { color: var(--ok); background: rgba(74, 222, 128, .10); border-color: transparent; }
+.pill.warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+.pill.crit { color: var(--crit); background: var(--crit-soft); border-color: transparent; }
+.pill.off, .pill.idle { color: var(--muted); }
+.pill.plain::before { display: none; }
+
+/* Metric cards (st.metric inside bordered containers) */
+[data-testid="stMetric"] label p { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+[data-testid="stMetricValue"] { font-size: clamp(18px, 1.9vw, 26px); font-weight: 700; letter-spacing: -0.01em; }
+
+/* Narrow screens: wrap labels instead of cutting them off with an ellipsis. */
+[data-testid="stMetric"] *, .stButton button * { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; overflow-wrap: normal !important; word-break: normal !important; }
+
+/* Section labels */
+.label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 8px 0 8px; }
+
+/* Answer */
+.answer-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 4px; }
+
+/* Property grid for the asset tab */
+.props { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px 24px; }
+.prop-k { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.prop-v { font-size: 14px; color: var(--ink); margin-top: 2px; }
+
+/* Document passages */
+.passage { border-left: 3px solid var(--accent); padding: 4px 0 4px 14px; margin: 4px 0 18px; }
+.passage-meta { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.passage-text { font-size: 14px; line-height: 1.6; color: var(--ink); white-space: pre-wrap; }
+
+/* Sidebar */
+section[data-testid="stSidebar"] { background: var(--surface); border-right: 1px solid var(--line); }
+.src-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.src-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+.src-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* Buttons */
+div.stButton > button, div.stFormSubmitButton > button { border-radius: 8px; font-weight: 600; min-height: 44px; transition: transform .12s ease, box-shadow .12s ease; }
+div.stButton > button:hover { transform: translateY(-1px); }
+div.stButton > button:active, div.stFormSubmitButton > button:active { transform: translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+    div.stButton > button { transition: none; }
+}
+</style>
+"""
+
 
 def inject_custom_css() -> None:
-    """Inject high-density CSS rules for enterprise software styling."""
-    st.markdown("""
-        <style>
-        /* Global Page Background & Font Settings */
-        .stApp {
-            background-color: #f8fafc;
-            color: #0f172a;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        /* Top Header Container */
-        .enterprise-header {
-            background-color: #ffffff;
-            border-bottom: 1px solid #cbd5e1;
-            padding: 12px 20px;
-            margin-bottom: 16px;
-            border-radius: 4px;
-        }
-        .header-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: #0f172a;
-            margin: 0;
-            letter-spacing: -0.3px;
-        }
-        .header-meta {
-            font-size: 12px;
-            color: #475569;
-            margin-top: 2px;
-            font-weight: 500;
-        }
-        .status-badge {
-            display: inline-block;
-            background-color: #f1f5f9;
-            color: #1e293b;
-            border: 1px solid #cbd5e1;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 3px;
-        }
-
-        /* Top KPI Cards */
-        .kpi-card {
-            background-color: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-top: 3px solid #1e3a8a;
-            border-radius: 4px;
-            padding: 10px 14px;
-            margin-bottom: 12px;
-        }
-        .kpi-title {
-            font-size: 11px;
-            font-weight: 700;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .kpi-value {
-            font-size: 18px;
-            font-weight: 700;
-            color: #0f172a;
-            margin-top: 2px;
-        }
-        .kpi-sub {
-            font-size: 11px;
-            color: #475569;
-            margin-top: 2px;
-        }
-
-        /* Sidebar Styling */
-        section[data-testid="stSidebar"] {
-            background-color: #0f172a;
-            color: #f8fafc;
-            border-right: 1px solid #1e293b;
-        }
-        section[data-testid="stSidebar"] .stMarkdown, 
-        section[data-testid="stSidebar"] h1, 
-        section[data-testid="stSidebar"] h2, 
-        section[data-testid="stSidebar"] h3 {
-            color: #f8fafc !important;
-        }
-        .sidebar-status-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            margin-bottom: 12px;
-        }
-        .sidebar-status-table td {
-            padding: 6px 0;
-            border-bottom: 1px solid #1e293b;
-        }
-        .badge-connected {
-            color: #22c55e;
-            font-weight: 600;
-            font-size: 11px;
-        }
-        .badge-ready {
-            color: #38bdf8;
-            font-weight: 600;
-            font-size: 11px;
-        }
-
-        /* Primary Operational Assessment Card */
-        .summary-card {
-            background-color: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-left: 4px solid #1e3a8a;
-            border-radius: 4px;
-            padding: 16px 20px;
-            margin-bottom: 16px;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-        }
-        .summary-title {
-            font-size: 15px;
-            font-weight: 700;
-            color: #1e3a8a;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .summary-body {
-            font-size: 14px;
-            line-height: 1.5;
-            color: #0f172a;
-            margin-bottom: 12px;
-        }
-        .summary-body p {
-            margin-bottom: 8px !important;
-        }
-        .summary-body ul, .summary-body ol {
-            margin-top: 4px !important;
-            margin-bottom: 8px !important;
-            padding-left: 20px !important;
-        }
-        .summary-body li {
-            margin-bottom: 4px !important;
-        }
-
-        /* Evidence Badges */
-        .evidence-tag {
-            display: inline-block;
-            background-color: #eff6ff;
-            color: #1d4ed8;
-            border: 1px solid #bfdbfe;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 3px;
-            margin-right: 4px;
-        }
-        .evidence-tag-inactive {
-            display: inline-block;
-            background-color: #f1f5f9;
-            color: #94a3b8;
-            border: 1px solid #e2e8f0;
-            font-size: 11px;
-            font-weight: 500;
-            padding: 2px 8px;
-            border-radius: 3px;
-            margin-right: 4px;
-        }
-
-        /* Evidence Cards */
-        .evidence-card {
-            background-color: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-        .evidence-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: #0f172a;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
-        }
-
-        /* Property Labels & Values */
-        .prop-label {
-            font-size: 10px;
-            font-weight: 700;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-        .prop-value {
-            font-size: 13px;
-            font-weight: 500;
-            color: #0f172a;
-            margin-bottom: 8px;
-        }
-
-        /* Status Badges for Alarms */
-        .alarm-badge-critical {
-            background-color: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fca5a5;
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 10px;
-        }
-        .alarm-badge-warning {
-            background-color: #fef3c7;
-            color: #92400e;
-            border: 1px solid #fde68a;
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 10px;
-        }
-        .alarm-badge-normal {
-            background-color: #dcfce7;
-            color: #166534;
-            border: 1px solid #86efac;
-            font-weight: 700;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 10px;
-        }
-
-        /* Streamlit native component tight spacing */
-        .block-container {
-            padding-top: 1rem !important;
-            padding-bottom: 2rem !important;
-        }
-        div[data-testid="stVerticalBlock"] > div {
-            gap: 0.5rem !important;
-        }
-
-        /* Buttons Styling */
-        div.stButton > button {
-            background-color: #ffffff;
-            color: #1e293b;
-            border: 1px solid #cbd5e1;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 500;
-            padding: 4px 10px;
-            transition: all 0.15s ease-in-out;
-        }
-        div.stButton > button:hover {
-            background-color: #f1f5f9;
-            border-color: #94a3b8;
-            color: #0f172a;
-        }
-
-        /* Hide Streamlit default header elements */
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        </style>
-    """, unsafe_allow_html=True)
+    """Inject the shared stylesheet."""
+    st.markdown(CSS, unsafe_allow_html=True)

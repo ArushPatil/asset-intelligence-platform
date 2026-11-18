@@ -37,6 +37,7 @@ class LLMClient:
 
         self._gemini_client = None
         self._openai_client = None
+        self.last_backend = "local"
 
         # 1. Initialize Gemini API Client if key is available
         if self.gemini_key and not self.gemini_key.startswith("your_"):
@@ -94,6 +95,7 @@ class LLMClient:
                     )
                     answer = response.text.strip()
                     logger.info("Received live response from Gemini API (%d characters).", len(answer))
+                    self.last_backend = f"Gemini {m_target}"
                     return answer
                 except Exception as e:
                     logger.warning("Gemini model '%s' call failed (%s). Trying next model target...", m_target, e)
@@ -113,12 +115,14 @@ class LLMClient:
                 )
                 answer = response.choices[0].message.content.strip()
                 logger.info("Received live response from OpenAI (%d characters).", len(answer))
+                self.last_backend = f"OpenAI {self.model_name}"
                 return answer
             except Exception as e:
                 logger.warning("OpenAI API call failed (%s). Falling back to local dynamic context engine.", e)
 
         # 3. Fallback: High-performance local dynamic synthesis engine
         logger.info("Executing local dynamic contextual synthesis engine fallback...")
+        self.last_backend = "local"
         return self._synthesize_fallback_response(prompt)
 
     def _synthesize_fallback_response(self, prompt: str) -> str:
@@ -154,8 +158,11 @@ class LLMClient:
             doc_part = prompt.split("--- TECHNICAL DOCUMENTATION RAG CONTEXT ---")[1]
             doc_text = doc_part.split("User Question:")[0].split("---")[0].strip()
 
+        # Diagnostic questions ("why is Room A warm") must not be swallowed by the keyword branches below.
+        is_diag = any(k in q_lower for k in ["why", "warm", "hot", "cold", "issue", "diagnose", "problem", "fault"])
+
         # 1. Question: Served Spaces / Areas
-        if any(k in q_lower for k in ["area", "areas", "serve", "serves", "space", "spaces", "zone", "zones", "room", "rooms"]):
+        if not is_diag and any(k in q_lower for k in ["area", "areas", "serve", "serves", "space", "spaces", "zone", "zones", "room", "rooms"]):
             for line in graph_text.split("\n"):
                 if "Served Spaces" in line or "Zones" in line:
                     spaces = line.split(":", 1)[-1].strip()
@@ -163,14 +170,14 @@ class LLMClient:
                     return f"Air Handling Unit **AHU-01** serves the following spaces/zones:\n\n{space_bullets}"
 
         # 2. Question: Manufacturer / OEM
-        if any(k in q_lower for k in ["manufacturer", "oem", "maker", "brand", "who made", "who manufactured"]):
+        if not is_diag and any(k in q_lower for k in ["manufacturer", "oem", "maker", "brand", "who made", "who manufactured"]):
             for line in graph_text.split("\n"):
                 if "Manufacturer" in line:
                     mfg = line.split(":", 1)[-1].strip()
                     return f"Air Handling Unit **AHU-01** is manufactured by **{mfg}**."
 
         # 3. Question: Components / Hierarchy
-        if any(k in q_lower for k in ["component", "components", "part", "parts", "hierarchy", "structure"]):
+        if not is_diag and any(k in q_lower for k in ["component", "components", "part", "parts", "hierarchy", "structure"]):
             for line in graph_text.split("\n"):
                 if "Components:" in line:
                     comps = line.split(":", 1)[-1].strip()
@@ -178,14 +185,14 @@ class LLMClient:
                     return f"Air Handling Unit **AHU-01** consists of the following equipment components:\n\n{comp_bullets}"
 
         # 4. Question: Maintenance / History
-        if any(k in q_lower for k in ["maintenance", "service", "history", "repair", "serviced", "technician"]):
+        if not is_diag and any(k in q_lower for k in ["maintenance", "service", "history", "repair", "serviced", "technician"]):
             for line in graph_text.split("\n"):
                 if "Recent Maintenance:" in line:
                     maint = line.split(":", 1)[-1].strip()
                     return f"Recent maintenance record for **AHU-01**:\n\n• {maint}"
 
         # 5. Question: Telemetry / Sensor Readings / Metrics / Anomalies
-        if any(k in q_lower for k in ["telemetry", "sensor", "reading", "readings", "latest", "average", "avg", "metric", "metrics", "rpm", "pressure", "anomaly", "anomalies", "stat", "stats"]):
+        if not is_diag and any(k in q_lower for k in ["telemetry", "sensor", "reading", "readings", "latest", "average", "avg", "metric", "metrics", "rpm", "pressure", "anomaly", "anomalies", "stat", "stats"]):
             if telemetry_text:
                 formatted_lines = []
                 for line in telemetry_text.split("\n"):
@@ -196,13 +203,23 @@ class LLMClient:
 
         # 6. Question: Diagnostics / Temperature / Faults
         if any(k in q_lower for k in ["temp", "temperature", "warm", "warmer", "hot", "issue", "diagnose", "problem", "fault", "why"]):
-            return (
-                "Operational Diagnosis for **AHU-01**:\n\n"
-                "• **Topology (Knowledge Graph)**: Conference Room A is directly served by Air Handling Unit AHU-01.\n"
-                "• **Telemetry Analytics**: Supply Air Temperature spiked up to 21.71 °C (8.69 Z-score above normal) between 08:35 and 08:55. Filter pressure drop escalated to 178.5 Pa (6.72 Z-score above mean) at 14:35.\n"
-                "• **Technical Guidance (OEM Manual)**: Carrier documentation indicates high filter pressure drop restricts airflow across the cooling coil, reducing cooling capacity and elevating supply air temperatures.\n\n"
-                "**Conclusion & Action**: Elevated room temperature is caused by restricted airflow due to a partially clogged filter in AHU-01. Recommended action is to inspect and clean/replace the Filter Section."
-            )
+            # Built only from retrieved context, so the local engine never states numbers it was not given.
+            parts = ["Operational diagnosis for **AHU-01** (local engine, no LLM key configured):", ""]
+            spaces = next((l.split(":", 1)[-1].strip() for l in graph_text.split("\n") if "Served Spaces" in l), "")
+            if spaces:
+                parts.append(f"• **Topology**: AHU-01 serves {spaces}.")
+            anomaly_lines = [l.strip().lstrip("•").strip() for l in telemetry_text.split("\n") if l.strip().startswith("•")]
+            if anomaly_lines:
+                parts.extend(f"• **Telemetry anomaly**: {a}" for a in anomaly_lines[:4])
+            elif telemetry_text:
+                parts.append("• **Telemetry**: no readings beyond the anomaly threshold in the analysed window.")
+            passage = re.search(r'Passage #1 \((.*?)\):\s*"(.*?)"', doc_text, re.DOTALL)
+            if passage:
+                snippet = passage.group(2).strip()
+                parts.append(f"• **OEM manual** ({passage.group(1)}): {snippet[:300]}{'…' if len(snippet) > 300 else ''}")
+            if len(parts) == 2:
+                parts.append("• No graph, telemetry or document evidence was retrieved for this question.")
+            return "\n".join(parts)
 
         # 6. Generic Clean Synthesis Fallback
         clean_lines = []
@@ -217,5 +234,6 @@ class LLMClient:
             return f"Operational Summary for question *\"{question}\"*:\n\n" + "\n\n".join(clean_lines)
 
         return (
-            "AHU-01 is a Carrier Air Handling Unit in Healthy operating condition (100/100) serving Conference Room A, Reception, and Second Floor - Open Workspace."
+            "No evidence was retrieved for this question, so there is nothing to answer from. "
+            "If it is about the asset's topology, check that Neo4j is running (see the sidebar)."
         )

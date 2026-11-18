@@ -7,7 +7,7 @@ chunk persistence, and cosine similarity search over document embeddings.
 
 import os
 import pickle
-from typing import List, Tuple, Optional
+from typing import Any, List, Tuple, Optional
 import numpy as np
 
 from .chunker import DocumentChunk
