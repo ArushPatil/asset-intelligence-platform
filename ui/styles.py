@@ -4,7 +4,8 @@ UI Styles Module.
 Apple-style dark theme, built to the HIG's two-layer model (apple-design skill, liquid-glass.md):
 - Content layer: opaque cards on a softly coloured ground. No glass here.
 - Functional layer: glass only on the floating chrome (sidebar, top edge, ask bar).
-Colours are our own Apple-like values, not Apple's published system colours.
+Colours are iOS dark-mode system colours (systemBlue, secondaryLabel, separator…), as listed
+in sarunw.com/posts/dark-color-cheat-sheet; web has no API for them, so they are hard-coded.
 """
 
 import streamlit as st
@@ -16,14 +17,14 @@ CSS = """
     --card: #1c1c1e;
     --fill: rgba(118, 118, 128, .24);
     --fill-strong: rgba(255, 255, 255, .16);
-    --ink: #f5f5f7;
-    --muted: #a1a1a6;
-    --line: rgba(84, 84, 88, .55);
-    --accent: #2dd4bf;
-    --on-accent: #00211d;
-    --ok: #4ade80;
-    --warn: #fbbf24;
-    --crit: #f87171;
+    --ink: #ffffff;
+    --muted: rgba(235, 235, 245, .6);
+    --line: rgba(84, 84, 88, .6);
+    --accent: #0a84ff;
+    --on-accent: #ffffff;
+    --ok: #30d158;
+    --warn: #ff9f0a;
+    --crit: #ff453a;
     --radius: 22px;
     --glass-bg: rgba(30, 30, 34, .55);
     --glass-edge: rgba(255, 255, 255, .14);
@@ -39,7 +40,7 @@ footer { visibility: hidden; }
 /* Content layer: colour lives in the ground, so the glass above has something to pick up. */
 .stApp {
     background:
-        radial-gradient(55% 45% at 0% 0%, rgba(45, 212, 191, .20), transparent 70%),
+        radial-gradient(55% 45% at 0% 0%, rgba(10, 132, 255, .18), transparent 70%),
         radial-gradient(45% 40% at 100% 0%, rgba(94, 92, 230, .18), transparent 70%),
         radial-gradient(60% 50% at 50% 110%, rgba(10, 132, 255, .10), transparent 70%),
         var(--bg);
@@ -67,7 +68,7 @@ footer { visibility: hidden; }
 /* 2. Sidebar: a floating glass panel inset from the window edge. */
 section[data-testid="stSidebar"] { background: transparent; border: none; }
 section[data-testid="stSidebar"] > div:first-child {
-    margin: 12px; height: calc(100% - 24px); border-radius: 26px;
+    margin: 12px; width: calc(100% - 24px); height: calc(100% - 24px); border-radius: 26px;
     background: var(--glass-bg); border: 1px solid var(--glass-edge);
     -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 20px 50px rgba(0, 0, 0, .35);
@@ -100,7 +101,7 @@ section[data-testid="stSidebar"] > div:first-child {
     }
 }
 @media (prefers-contrast: more) {
-    :root { --glass-edge: rgba(255, 255, 255, .5); --muted: #c7c7cc; }
+    :root { --glass-edge: rgba(255, 255, 255, .5); --muted: rgba(235, 235, 245, .8); }
     section[data-testid="stSidebar"] > div:first-child, .st-key-askbar { background: var(--card); }
 }
 

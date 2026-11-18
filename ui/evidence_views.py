@@ -17,8 +17,8 @@ from llm.models import AssetContext, DocumentContext, OrchestratorResponse
 
 from .data import METRICS, load_telemetry, telemetry_anomalies
 
-# Dark-surface steps validated with the dataviz skill's validate_palette.js (surface #171a1f).
-ACCENT, ANOMALY, SURFACE, GRID, INK, MUTED = "#2dd4bf", "#ff6961", "#1c1c1e", "#2c2c2e", "#f5f5f7", "#a1a1a6"
+# iOS dark-mode system colours: systemBlue, systemRed, secondarySystemBackground, opaqueSeparator, label, systemGray.
+ACCENT, ANOMALY, SURFACE, GRID, INK, MUTED = "#0a84ff", "#ff453a", "#1c1c1e", "#38383a", "#ffffff", "#8e8e93"
 
 
 def render_telemetry_chart(metric: str, key: str) -> None:
