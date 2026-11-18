@@ -28,9 +28,9 @@ def render_kpi_cards(df: pd.DataFrame) -> None:
             st.metric(
                 label=meta["label"],
                 value=f"{value:,.1f} {meta['unit']}",
-                delta=f"{value - avg:+,.1f} vs 24 h avg",
+                delta=f"{value - avg:+,.1f} ({(value - avg) / avg:+.1%})" if avg else f"{value - avg:+,.1f}",
                 # A "+0.0" change is not a rise; grey it out instead of colouring it.
                 delta_color="off" if abs(value - avg) < 0.05 else "inverse" if metric in RISE_IS_BAD else "normal",
             )
             note = f"{n_anom} anomalies" if n_anom else "No anomalies"
-            st.caption(f"{note} · {latest['timestamp']:%H:%M}")
+            st.caption(f"vs 24 h avg · {note} · {latest['timestamp']:%H:%M}")

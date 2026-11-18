@@ -45,12 +45,12 @@ footer { visibility: hidden; }
 .ai-sub { font-size: 14px; color: var(--muted); margin-top: 4px; }
 
 /* Pills */
-.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink); white-space: nowrap; }
-.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.pill.ok { color: var(--ok); background: rgba(74, 222, 128, .10); border-color: transparent; }
-.pill.warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
-.pill.crit { color: var(--crit); background: var(--crit-soft); border-color: transparent; }
-.pill.off, .pill.idle { color: var(--muted); }
+/* Plain coloured text with a dot, like a ticker: no filled chips. */
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pill.ok { color: var(--ok); }
+.pill.warn { color: var(--warn); }
+.pill.crit { color: var(--crit); }
 .pill.plain::before { display: none; }
 
 /* Metric cards (st.metric inside bordered containers) */
@@ -59,6 +59,10 @@ footer { visibility: hidden; }
 
 /* Narrow screens: wrap labels instead of cutting them off with an ellipsis. */
 [data-testid="stMetric"] *, .stButton button * { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; overflow-wrap: normal !important; word-break: normal !important; }
+
+/* Ticker-style change: coloured text, no chip behind it. */
+[data-testid="stMetricDelta"] { background: transparent !important; padding: 0 !important; font-variant-numeric: tabular-nums; }
+[data-testid="stMetricValue"] { font-variant-numeric: tabular-nums; }
 
 /* Section labels */
 .label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 8px 0 8px; }
