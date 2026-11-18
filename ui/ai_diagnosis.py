@@ -32,7 +32,7 @@ def render_ai_diagnosis(response: OrchestratorResponse) -> None:
     pills.append(f"<span class='pill plain'>{backend}</span>")
     pills.append(f"<span class='pill plain'>{response.total_execution_time_ms / 1000:.1f} s</span>")
 
-    with st.container(border=True):
+    with st.container(border=True, key="card_answer"):
         st.markdown("<div class='label'>Answer</div>", unsafe_allow_html=True)
         st.markdown(f"**{_to_markdown(response.user_question)}**")
         st.markdown(_to_markdown(response.final_answer))

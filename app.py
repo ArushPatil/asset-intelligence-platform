@@ -15,7 +15,7 @@ load_dotenv()
 st.set_page_config(
     page_title="Asset Intelligence · AHU-01",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 from ui import (  # noqa: E402  (set_page_config must come first)
@@ -24,7 +24,8 @@ from ui import (  # noqa: E402  (set_page_config must come first)
     render_evidence_section,
     render_header,
     render_kpi_cards,
-    render_query_section,
+    render_ask_bar,
+    render_presets,
     render_sidebar,
     render_telemetry_chart,
 )
@@ -66,7 +67,8 @@ def main() -> None:
     render_kpi_cards(df)
     st.write("")
 
-    question = render_query_section()
+    # A typed question is stored by the ask bar (rendered last) and run on the rerun.
+    question = render_presets() or st.session_state.pop("pending", None)
     if question:
         run_query(question)
 
@@ -75,7 +77,7 @@ def main() -> None:
         render_ai_diagnosis(response)
         render_evidence_section(response)
     else:
-        with st.container(border=True):
+        with st.container(border=True, key="card_chart"):
             st.markdown("<div class='label'>Last 24 hours</div>", unsafe_allow_html=True)
             metric = st.segmented_control(
                 "Metric", list(METRICS), default="supply_air_temperature", key="landing_metric",
@@ -83,6 +85,7 @@ def main() -> None:
             ) or "supply_air_temperature"
             render_telemetry_chart(metric, key="landing_chart")
 
+    render_ask_bar()
     # Last, so it reflects anything this run loaded (e.g. the manual index).
     render_sidebar()
 

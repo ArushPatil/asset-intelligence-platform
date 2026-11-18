@@ -42,5 +42,5 @@ def render_sidebar() -> None:
             _row("OEM manuals", document_status()),
             _row("Language model", llm_status()),
         ]
-        st.markdown("".join(rows), unsafe_allow_html=True)
+        st.markdown(f"<div class='src-list'>{''.join(rows)}</div>", unsafe_allow_html=True)
         st.caption("Offline sources are skipped; answers use whatever is available.")

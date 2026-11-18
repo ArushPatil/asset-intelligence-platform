@@ -18,7 +18,7 @@ from llm.models import AssetContext, DocumentContext, OrchestratorResponse
 from .data import METRICS, load_telemetry, telemetry_anomalies
 
 # Dark-surface steps validated with the dataviz skill's validate_palette.js (surface #171a1f).
-ACCENT, ANOMALY, SURFACE, GRID, INK, MUTED = "#1f9e8f", "#e5534b", "#171a1f", "#262a31", "#c3c7ce", "#9aa1ab"
+ACCENT, ANOMALY, SURFACE, GRID, INK, MUTED = "#2dd4bf", "#ff6961", "#1c1c1e", "#2c2c2e", "#f5f5f7", "#a1a1a6"
 
 
 def render_telemetry_chart(metric: str, key: str) -> None:
@@ -31,8 +31,11 @@ def render_telemetry_chart(metric: str, key: str) -> None:
         line=dict(color=ACCENT, width=2),
         hovertemplate=f"%{{x|%d %b %H:%M}}<br>%{{y:.2f}} {meta['unit']}<extra></extra>",
     ))
-    fig.add_hline(y=df[metric].mean(), line=dict(color=MUTED, dash="dot", width=1),
-                  annotation_text="24 h avg", annotation_position="top left")
+    # Average as a legend entry, not an annotation that sits on the line.
+    fig.add_trace(go.Scatter(
+        x=[df["timestamp"].iloc[0], df["timestamp"].iloc[-1]], y=[df[metric].mean()] * 2,
+        mode="lines", name="24 h average", line=dict(color=MUTED, dash="dot", width=1), hoverinfo="skip",
+    ))
     if anomalies:
         a = pd.DataFrame(anomalies)
         fig.add_trace(go.Scatter(
@@ -129,6 +132,11 @@ def _execution_tab(response: OrchestratorResponse) -> None:
 def render_evidence_section(response: OrchestratorResponse) -> None:
     """Render the evidence tabs for one answer."""
     errors = {sc.service: sc.error_message for sc in response.service_calls if not sc.success}
+    with st.container(border=True, key="card_evidence"):
+        _evidence_tabs(response, errors)
+
+
+def _evidence_tabs(response: OrchestratorResponse, errors: Dict[str, Optional[str]]) -> None:
     tel, asset, docs, trace = st.tabs(["Telemetry", "Asset", "Manuals", "Trace"])
     with tel:
         default = response.intent.target_metric if response.intent.target_metric in METRICS else "supply_air_temperature"

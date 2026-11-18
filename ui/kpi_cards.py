@@ -17,14 +17,14 @@ RISE_IS_BAD = {"supply_air_temperature", "return_air_temperature", "filter_press
 
 def render_kpi_cards(df: pd.DataFrame) -> None:
     """Render one metric card per key sensor."""
-    cols = st.columns(len(KPI_METRICS))
+    cols = st.container(key="kpis").columns(len(KPI_METRICS))
     latest = df.iloc[-1]
     for col, metric in zip(cols, KPI_METRICS):
         meta = METRICS[metric]
         value = float(latest[metric])
         avg = float(df[metric].mean())
         n_anom = len(telemetry_anomalies(metric))
-        with col, st.container(border=True):
+        with col, st.container(border=True, key=f"card_{metric}"):
             st.metric(
                 label=meta["label"],
                 value=f"{value:,.1f} {meta['unit']}",
