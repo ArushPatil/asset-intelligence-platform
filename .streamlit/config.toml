@@ -5,7 +5,8 @@ backgroundColor = "#0f1115"
 secondaryBackgroundColor = "#171a1f"
 textColor = "#e8eaed"
 borderColor = "#262a31"
-font = "sans serif"
+font = "-apple-system, BlinkMacSystemFont, system-ui, sans-serif"
+headingFont = "-apple-system, BlinkMacSystemFont, system-ui, sans-serif"
 
 [client]
 toolbarMode = "minimal"

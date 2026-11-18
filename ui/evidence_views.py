@@ -45,14 +45,16 @@ def render_telemetry_chart(metric: str, key: str) -> None:
         height=320, margin=dict(l=0, r=0, t=30, b=0),
         legend=dict(orientation="h", x=0, y=1.08, font=dict(color=INK)),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Inter, sans-serif", size=12, color=MUTED), hovermode="x unified",
+        font=dict(family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif", size=12, color=MUTED), hovermode="x unified",
         hoverlabel=dict(bgcolor=SURFACE, bordercolor=GRID, font=dict(color=INK)),
     )
     fig.update_xaxes(gridcolor=GRID, zeroline=False)
     fig.update_yaxes(gridcolor=GRID, zeroline=False, title_text=meta["unit"])
+    # Summary line above the chart, so the point reads before the plot (charting-data.md).
+    latest, mean = df[metric].iloc[-1], df[metric].mean()
+    st.markdown(f"**{meta['label']} {latest:,.1f} {meta['unit']}** · 24 h average {mean:,.1f} · "
+                + (f"{len(anomalies)} readings beyond 2.5 standard deviations" if anomalies else "no unusual readings"))
     st.plotly_chart(fig, use_container_width=True, key=key)
-    st.caption(f"{len(anomalies)} readings beyond 2.5 standard deviations of the 24 h mean."
-               if anomalies else "No readings beyond 2.5 standard deviations of the 24 h mean.")
 
 
 def _metric_picker(key: str, default: str) -> str:
